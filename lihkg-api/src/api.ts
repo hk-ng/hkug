@@ -101,7 +101,7 @@ export function getEmoji() {
         .then(response => Convert.toEmojis(response.data));
 };
 
-export function create(): Promise<LIHKG> {
+export function create(baseURL = 'defaultBaseURL'): Promise<LIHKG> {
     let device = enc.Hex.stringify(SHA1(uuidv4()));
     let instance = axios.create({
         headers: {
@@ -111,7 +111,7 @@ export function create(): Promise<LIHKG> {
             'orginal': 'https://lihkg.com',
             'referer': 'https://lihkg.com/category/1',
         },
-        baseURL: 'https://lihkg.com/api_v2/',
+        baseURL: baseURL,
         transformResponse: req => req
     });
     let token = '';
