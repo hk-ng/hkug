@@ -1,34 +1,11 @@
-// Please help improve quicktype by enabling anonymous telemetry with:
-//
-//   $ quicktype --telemetry enable
-//
-// You can also enable telemetry on any quicktype invocation:
-//
-//   $ quicktype pokedex.json -o Pokedex.cs --telemetry enable
-//
-// This helps us improve quicktype by measuring:
-//
-//   * How many people use quicktype
-//   * Which features are popular or unpopular
-//   * Performance
-//   * Errors
-//
-// quicktype does not collect:
-//
-//   * Your filenames or input data
-//   * Any personally identifiable information (PII)
-//   * Anything not directly related to quicktype's usage
-//
-// If you don't want to help improve quicktype, you can dismiss this message with:
-//
-//   $ quicktype --telemetry disable
-//
-// For a full privacy policy, visit app.quicktype.io/privacy
-//
+export interface GeneralJson {
+    error_code: string,
+    error_message?: string,
+    server_time: number,
+    success: number,
+}
 
-export interface BlockedUserJSON {
-    success:     number;
-    server_time: number;
+export interface BlockedUserJSON extends GeneralJson{
     response:    BlockUserResponse;
 }
 
@@ -93,9 +70,7 @@ export interface PushSetting {
     following_new_thread: boolean;
 }
 
-export interface ContentJSON {
-    success:     number;
-    server_time: number;
+export interface ContentJSON extends GeneralJson {
     response:    Thread;
 }
 
@@ -117,9 +92,13 @@ export interface Thread {
     max_reply_dislike_count: string;
     create_time:             number;
     last_reply_time:         number;
+    last_reply_time_order?:  number;
     status:                  string;
     remark:                  ContentResponseRemark;
     last_reply_user_id:      string;
+    first_post_id?:          string;
+    last_post_id?:           string;
+    most_like_post_id?:      string;
     max_reply:               string;
     total_page:              number;
     is_adu:                  boolean;
@@ -179,82 +158,32 @@ export interface ContentResponseSubCategory {
     orderable:  boolean;
     is_filter:  boolean;
     url:        string;
-    query:      Query1;
-}
-
-export interface Query1 {
-    cat_id:     string;
-    sub_cat_id: string;
+    query:      CategoryQuery;
 }
 
 export interface Emoji {
-    cat:     string;
-    icons:   Array<string[]>;
-    special: Array<string[]>;
-    show_on: ShowOn1;
-    pin_top: boolean;
-}
-
-export interface ShowOn1 {
-    start_time: number;
-    end_time:   number;
-}
-
-export interface Emojis {
     cat:      string;
     icons:    Array<string[]>;
-    show_on?: ShowOn2;
     special?: Array<string[]>;
+    show_on?: ShowOn;
     pin_top?: boolean;
 }
 
-export interface ShowOn2 {
+export interface ShowOn {
     start_time?: number;
     end_time?:   number;
     user_id?:    number[];
     cat_id?:     any[];
 }
 
-export interface FollowingUserJSON {
-    success:     number;
-    server_time: number;
+export interface FollowingUserJSON extends GeneralJson{
     response:    FollowingUserResponse;
 }
 
 export interface FollowingUserResponse {
     is_pagination: boolean;
-    items:         Item[];
+    items:         Thread[];
     me:            Me;
-}
-
-export interface Item {
-    thread_id:               string;
-    cat_id:                  string;
-    sub_cat_id:              string;
-    title:                   string;
-    user_nickname:           string;
-    user_gender:             UserGender;
-    no_of_reply:             string;
-    no_of_uni_user_reply:    string;
-    like_count:              string;
-    dislike_count:           string;
-    reply_like_count:        string;
-    reply_dislike_count:     string;
-    max_reply_like_count:    string;
-    max_reply_dislike_count: string;
-    create_time:             number;
-    last_reply_time:         number;
-    status:                  string;
-    remark:                  ItemRemark;
-    last_reply_user_id:      string;
-    max_reply:               string;
-    total_page:              number;
-    is_adu:                  boolean;
-    category:                Category;
-    is_bookmarked:           boolean;
-    is_replied:              boolean;
-    user:                    User;
-    is_hot:                  boolean;
 }
 
 export interface ItemRemark {
@@ -267,9 +196,7 @@ export enum UserGender {
     F = "F"
 }
 
-export interface ImagesListJSON {
-    success:     number;
-    server_time: number;
+export interface ImagesListJSON extends GeneralJson{
     response:    ImagesResponse;
 }
 
@@ -298,47 +225,12 @@ export interface LikeJSON {
 }
 
 export interface LikeReponse {
-    thread:  ThreadClass;
+    thread:  Thread;
     is_like: boolean;
     me:      Me;
 }
 
-export interface ThreadClass {
-    thread_id:               string;
-    cat_id:                  string;
-    sub_cat_id:              string;
-    title:                   string;
-    user_id:                 string;
-    user_nickname:           string;
-    user_gender:             string;
-    no_of_reply:             string;
-    no_of_uni_user_reply:    string;
-    like_count:              number;
-    dislike_count:           string;
-    reply_like_count:        string;
-    reply_dislike_count:     string;
-    max_reply_like_count:    string;
-    max_reply_dislike_count: string;
-    create_time:             number;
-    last_reply_time:         number;
-    last_reply_time_order:   number;
-    status:                  string;
-    remark:                  ContentResponseRemark;
-    last_reply_user_id:      string;
-    first_post_id:           string;
-    last_post_id:            string;
-    most_like_post_id:       string;
-    max_reply:               string;
-    total_page:              number;
-    is_adu:                  boolean;
-    category:                Category;
-    is_bookmarked:           boolean;
-    is_replied:              boolean;
-}
-
-export interface LoginJSON {
-    success:     number;
-    server_time: number;
+export interface LoginJSON extends GeneralJson{
     response:    LoginResponse;
 }
 
@@ -353,24 +245,20 @@ export interface LoginResponse {
 
 export interface FixedCategoryList {
     name:     Name;
-    cat_list: CatList[];
+    cat_list: Category[];
 }
 
-export interface CatList {
+export interface Category {
     cat_id:       string;
     name:         string;
     postable:     boolean;
     type:         CategoryListType;
     url:          URL;
-    query:        CategoryListQuery;
-    sub_category: SubCategoryElement[];
+    query:        CategoryQuery;
+    sub_category: SubCategory[];
 }
 
-export interface CategoryListQuery {
-    cat_id?: string;
-}
-
-export interface SubCategoryElement {
+export interface SubCategory {
     cat_id:     string;
     sub_cat_id: number | string;
     name:       string;
@@ -379,10 +267,10 @@ export interface SubCategoryElement {
     orderable:  boolean;
     is_filter:  boolean;
     url:        URL;
-    query:      Query2;
+    query:      CategoryQuery;
 }
 
-export interface Query2 {
+export interface CategoryQuery {
     order?:      Order;
     type?:       QueryType;
     cat_id?:     string;
@@ -394,6 +282,7 @@ export enum Order {
 }
 
 export enum QueryType {
+    Now = "now",
     Daily = "daily",
     Weekly = "weekly",
 }
@@ -419,9 +308,7 @@ export enum Name {
     興趣 = "興趣",
 }
 
-export interface ProfileJSON {
-    success:     number;
-    server_time: number;
+export interface ProfileJSON extends GeneralJson{
     response:    ProfileResponse;
 }
 
@@ -430,15 +317,13 @@ export interface ProfileResponse {
     me:   Me;
 }
 
-export interface PropertyJSON {
-    success:     number;
-    server_time: number;
+export interface PropertyJSON extends GeneralJson{
     response:    PropertyResponse;
 }
 
 export interface PropertyResponse {
     lihkg:                boolean;
-    category_list:        CatList[];
+    category_list:        Category[];
     fixed_category_list:  FixedCategoryList[];
     config:               Config;
     keyword_filter_list?: any[];
@@ -625,11 +510,11 @@ export namespace Convert {
         return JSON.stringify(value, null, 2);
     }
 
-    export function toEmojis(json: string): Emojis[] {
+    export function toEmojis(json: string): Emoji[] {
         return JSON.parse(json);
     }
 
-    export function emojisToJson(value: Emojis[]): string {
+    export function emojisToJson(value: Emoji[]): string {
         return JSON.stringify(value, null, 2);
     }
 

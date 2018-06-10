@@ -5,11 +5,18 @@ const model_1 = require("./model");
 const uuid_1 = require("uuid");
 const crypto_js_1 = require("crypto-js");
 const url_1 = require("url");
-var ThreadOrder;
-(function (ThreadOrder) {
-    ThreadOrder["replyTime"] = "reply_time";
-    ThreadOrder["score"] = "score";
-})(ThreadOrder = exports.ThreadOrder || (exports.ThreadOrder = {}));
+const defaultBaseURL = 'https://lihkg.com/api_v2/';
+var PostOrder;
+(function (PostOrder) {
+    PostOrder["replyTime"] = "reply_time";
+    PostOrder["score"] = "score";
+})(PostOrder = exports.PostOrder || (exports.PostOrder = {}));
+var ThreadSearchOrder;
+(function (ThreadSearchOrder) {
+    ThreadSearchOrder["score"] = "score";
+    ThreadSearchOrder["descCreateTime"] = "desc_create_time";
+    ThreadSearchOrder["descReplyTime"] = "desc_reply_time";
+})(ThreadSearchOrder = exports.ThreadSearchOrder || (exports.ThreadSearchOrder = {}));
 var ThreadMediaIncludeLink;
 (function (ThreadMediaIncludeLink) {
     ThreadMediaIncludeLink["Yes"] = "1";
@@ -17,7 +24,7 @@ var ThreadMediaIncludeLink;
 })(ThreadMediaIncludeLink = exports.ThreadMediaIncludeLink || (exports.ThreadMediaIncludeLink = {}));
 function getEmoji() {
     return axios_1.default
-        .get('https://x.lihkg.com/hkgmoji.json')
+        .get('https://x.lihkg.com/hkgmoji.json', { transformResponse: req => req })
         .then(response => model_1.Convert.toEmojis(response.data));
 }
 exports.getEmoji = getEmoji;
@@ -32,22 +39,23 @@ function create() {
             'orginal': 'https://lihkg.com',
             'referer': 'https://lihkg.com/category/1',
         },
+        baseURL: 'https://lihkg.com/api_v2/',
         transformResponse: req => req
     });
     let token = '';
     let login = false;
-    let initProperty = true;
+    let initProperty = false;
     let property;
     const apiEndPoint = {
         getProperty: () => instance
-            .get('https://lihkg.com/api_v2/system/property')
+            .get('system/property')
             .then(response => {
             const propertyJson = model_1.Convert.toPropertyJSON(response.data);
             property = propertyJson.response.category_list;
             return propertyJson;
         }),
         login: (request) => instance
-            .post('https://lihkg.com/api_v2/auth/login', new url_1.URLSearchParams(Object.entries(request)).toString())
+            .post('auth/login', new url_1.URLSearchParams(Object.entries(request)).toString())
             .then(function (response) {
             let loginJson = model_1.Convert.toLoginJSON(response.data);
             if (loginJson.success) {
@@ -66,31 +74,52 @@ function create() {
             if (subCategory === undefined) {
                 return Promise.reject(new Error('invalid sub category id'));
             }
-            let query = Object.assign({}, subCategory.query, { cat_id: request.sub_cat_id.toString(), page: request.page.toString(), count: request.count.toString() });
+            let query = Object.assign({ cat_id: request.cat_id.toString(), page: request.page.toString(), count: request.count.toString(), type: model_1.QueryType.Now }, subCategory.query);
             return instance
-                .get(subCategory.url + '/' + new url_1.URLSearchParams(Object.entries(query)).toString())
+                .get(subCategory.url.replace(defaultBaseURL, '') + '?' + new url_1.URLSearchParams(Object.entries(query)).toString())
                 .then(response => model_1.Convert.toTopicListJSON(response.data));
         },
+        getTopicListByThreadId: threadIds => instance
+            .get(`thread?thread_ids=[${threadIds.join(',')}]`)
+            .then(response => model_1.Convert.toTopicListJSON(response.data)),
         getThreadContent: request => instance
-            .get(`https://lihkg.com/api_v2/thread/${request.thread_id}/page/${request.page}?order=${request.order}`)
+            .get(`thread/${request.thread_id}/page/${request.page}?order=${request.order}`)
             .then(response => model_1.Convert.toContentJSON(response.data)),
         reply: request => instance
-            .post('https://lihkg.com/api_v2/thread/reply', new url_1.URLSearchParams(Object.entries(request)).toString())
+            .post('thread/reply', new url_1.URLSearchParams(Object.entries(request)).toString())
             .then(response => JSON.parse(response.data)),
         getThreadMedia: request => instance
-            .get(`https://lihkg.com/api_v2/thread/${request.thread_id}/media?` + new url_1.URLSearchParams(Object.entries(request)).toString())
+            .get(`thread/${request.thread_id}/media?` + new url_1.URLSearchParams(Object.entries(request)).toString())
             .then(response => model_1.Convert.toImagesListJSON(response.data)),
         likeThread: request => instance
-            .post(`https://lihkg.com/api_v2/thread/${request.thread_id}/${request.like ? 'like' : 'dislike'}`)
+            .post(`thread/${request.thread_id}/${request.like ? 'like' : 'dislike'}`)
             .then(response => model_1.Convert.toLikeJSON(response.data)),
         likePost: request => instance
-            .post(`https://lihkg.com/api_v2/thread/${request.thread_id}/${request.post_id}/${request.like ? 'like' : 'dislike'}`)
-            .then(response => JSON.parse(response.data))
+            .post(`thread/${request.thread_id}/${request.post_id}/${request.like ? 'like' : 'dislike'}`)
+            .then(response => JSON.parse(response.data)),
+        getBookmark: request => instance
+            .get('thread/bookmark?' + new url_1.URLSearchParams(Object.entries(request)).toString())
+            .then(response => model_1.Convert.toTopicListJSON(response.data)),
+        getProfile: request => instance
+            .get(`user/${request.user_id}/profile`)
+            .then(response => model_1.Convert.toProfileJSON(response.data)),
+        getBlockedUser: () => instance
+            .get('me/blocked-user')
+            .then(response => model_1.Convert.toBlockedUserJSON(response.data)),
+        getFollowingUser: () => instance
+            .get('me/following-user')
+            .then(response => model_1.Convert.toFollowingUserJSON(response.data)),
+        search: request => instance
+            .get('thread/search?' + new url_1.URLSearchParams(Object.entries(request)).toString())
+            .then(response => model_1.Convert.toTopicListJSON(response.data)),
     };
     const injectAxiosRequestConfig = function (config) {
         if (login) {
-            let timeStamp = Math.floor(Date.now() / 1000);
-            let newConfig = Object.assign({}, config, { headers: Object.assign({}, config.headers, { 'X-LI-REQUEST-TIME': timeStamp, 'X-LI-DIGEST': crypto_js_1.enc.Hex.stringify(crypto_js_1.SHA1(['jeams', config.method, config.url, config.data, token, timeStamp].join('$'))) }) });
+            const timeStamp = Math.floor(Date.now() / 1000);
+            const digest = (config.method == 'get')
+                ? crypto_js_1.enc.Hex.stringify(crypto_js_1.SHA1(['jeams', config.method, config.baseURL + config.url.replace('[', '%5b').replace(']', '%5d').replace(',', '%2c'), config.data, token, timeStamp].join('$')))
+                : crypto_js_1.enc.Hex.stringify(crypto_js_1.SHA1(['jeams', config.method, config.baseURL + config.url, config.data, token, timeStamp].join('$')));
+            const newConfig = Object.assign({}, config, { headers: Object.assign({}, config.headers, { 'X-LI-REQUEST-TIME': timeStamp, 'X-LI-DIGEST': digest }) });
             console.log(newConfig);
             return newConfig;
         }
